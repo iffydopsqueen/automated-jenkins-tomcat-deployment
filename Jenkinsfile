@@ -56,7 +56,11 @@ pipeline {
                 sh '''
                     bash -eu -o pipefail <<'EOF'
                     WAR_FILE=$(ls -1 app/target/*.war | head -n 1)
-                    cp "$WAR_FILE" "${DEPLOY_WAR}"
+                    if [ "$WAR_FILE" != "${DEPLOY_WAR}" ]; then
+                        cp "$WAR_FILE" "${DEPLOY_WAR}"
+                    else
+                        echo "DEPLOY_WAR already matches built artifact: ${DEPLOY_WAR}"
+                    fi
                     ls -lh "${DEPLOY_WAR}"
                     EOF
                 '''
