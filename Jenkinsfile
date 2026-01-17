@@ -69,7 +69,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                branch 'master'
+                expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
                 withCredentials([
@@ -93,7 +93,7 @@ pipeline {
 
         stage('Health Check') {
             when {
-                branch 'master'
+                expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
                 sh 'curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/"'
