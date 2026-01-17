@@ -1,0 +1,27 @@
+---
+
+# Jenkins role defaults
+jenkins_port: 8080
+jenkins_version: "latest"
+jenkins_home: /var/lib/jenkins
+jenkins_url: "http://{{ ansible_host }}:{{ jenkins_port }}"
+
+# Java home
+java_version: openjdk-17-jdk
+java_home: /usr/lib/jvm/java-17-openjdk-amd64
+
+# System dependencies for Jenkins
+system_packages:
+  - ca-certificates
+  - gnupg
+  - git
+  - curl
+  - wget
+  - tar
+  - apt-transport-https
+
+jenkins_plugins:
+  - git
+  - maven-plugin
+  - ssh-agent
+  - credentials-binding

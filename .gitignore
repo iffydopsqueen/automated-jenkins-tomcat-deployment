@@ -1,6 +1,3 @@
-# Log file
-*.log
-
 # IDE
 .idea/
 .vscode/
@@ -10,6 +7,7 @@
 *.pem
 *.key
 *.env
+.ssh/*
 secrets/
 
 # Maven
@@ -17,9 +15,6 @@ secrets/
 *.jar
 *.class
 target/
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-.mvn/wrapper/maven-wrapper.properties
 
 # Terraform
 *.tfstate

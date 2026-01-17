@@ -1,0 +1,230 @@
+---
+
+# Install and configure Apache Tomcat
+- name: Update system packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+  tags:
+    - system-update
+
+- name: Install required dependencies
+  apt:
+    name: "{{ system_packages }}"
+    state: present
+  tags:
+    - dependencies
+
+- name: Install Java
+  apt:
+    name: "{{ java_version }}"
+    state: present
+  tags:
+    - java
+
+- name: Verify Java installation
+  command: java -version
+  register: java_version_check
+  changed_when: false
+  tags:
+    - java
+
+- name: Set JAVA_HOME environment variable
+  lineinfile:
+    path: /etc/profile.d/java.sh
+    line: "export JAVA_HOME={{ java_home }}"
+    create: yes
+    state: present
+  tags:
+    - java
+
+- name: Create Tomcat group
+  group:
+    name: "{{ tomcat_group }}"
+    state: present
+  tags:
+    - tomcat-user
+
+- name: Create Tomcat user
+  user:
+    name: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    home: "{{ tomcat_home }}"
+    shell: /bin/nologin
+    createhome: no
+    state: present
+  tags:
+    - tomcat-user
+
+- name: Create deployment user
+  user:
+    name: "{{ tomcat_deploy_user }}"
+    groups: "{{ tomcat_group }}"
+    append: yes
+    shell: /bin/bash
+    createhome: yes
+    state: present
+  tags:
+    - tomcat-user
+
+- name: Validate deploy SSH public key
+  assert:
+    that:
+      - tomcat_deploy_public_key | default('') | trim | length > 0
+      - tomcat_deploy_public_key | trim is match('^ssh-\\S+\\s+\\S+')
+    fail_msg: "tomcat_deploy_public_key must be a valid SSH public key (e.g. 'ssh-ed25519 AAAA...')."
+  tags:
+    - tomcat-user
+
+- name: Add deploy SSH public key
+  authorized_key:
+    user: "{{ tomcat_deploy_user }}"
+    key: "{{ tomcat_deploy_public_key | trim }}"
+    state: present
+  tags:
+    - tomcat-user
+
+- name: Create Tomcat home directory
+  file:
+    path: "{{ tomcat_home }}"
+    state: directory
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: '0755'
+  tags:
+    - tomcat-dirs
+
+- name: Download Tomcat binary
+  get_url:
+    url: "https://archive.apache.org/dist/tomcat/tomcat-10/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
+    dest: "/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz"
+    mode: '0644'
+  tags:
+    - tomcat-download
+
+- name: Extract Tomcat archive
+  unarchive:
+    src: "/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz"
+    dest: "{{ tomcat_home }}"
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    remote_src: yes
+    extra_opts: "--strip-components=1"
+  tags:
+    - tomcat-extract
+
+- name: Set proper permissions on Tomcat directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: '0755'
+    recurse: yes
+  loop:
+    - "{{ tomcat_home }}/bin"
+    - "{{ tomcat_home }}/conf"
+    - "{{ tomcat_home }}/logs"
+    - "{{ tomcat_home }}/webapps"
+    - "{{ tomcat_home }}/work"
+  tags:
+    - tomcat-permissions
+
+- name: Ensure deploy user can write to webapps
+  file:
+    path: "{{ tomcat_home }}/webapps"
+    state: directory
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: "{{ tomcat_webapps_mode }}"
+  tags:
+    - tomcat-permissions
+
+- name: Find Tomcat scripts
+  find:
+    paths: "{{ tomcat_home }}/bin"
+    patterns: "*.sh"
+    file_type: file
+  register: tomcat_script_files
+  tags:
+    - tomcat-permissions
+
+- name: Make Tomcat scripts executable
+  file:
+    path: "{{ item.path }}"
+    mode: '0755'
+  loop: "{{ tomcat_script_files.files }}"
+  when: tomcat_script_files.matched > 0
+  tags:
+    - tomcat-permissions
+
+- name: Configure Tomcat users (tomcat-users.xml)
+  template:
+    src: tomcat-users.xml.j2
+    dest: "{{ tomcat_home }}/conf/tomcat-users.xml"
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: '0600'
+  notify: restart tomcat
+  tags:
+    - tomcat-config
+
+- name: Configure Tomcat server (server.xml)
+  template:
+    src: server.xml.j2
+    dest: "{{ tomcat_home }}/conf/server.xml"
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: '0644'
+  notify: restart tomcat
+  tags:
+    - tomcat-config
+
+- name: Create Tomcat systemd service file
+  template:
+    src: tomcat.service.j2
+    dest: /etc/systemd/system/tomcat.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: daemon reload
+  tags:
+    - tomcat-service
+
+- name: Allow deploy user to restart Tomcat
+  copy:
+    dest: /etc/sudoers.d/tomcat-deploy
+    content: "{{ tomcat_deploy_user }} ALL=NOPASSWD: {{ tomcat_deploy_sudoers_commands | join(', ') }}\n"
+    owner: root
+    group: root
+    mode: '0440'
+  when: tomcat_deploy_sudo
+  tags:
+    - tomcat-service
+
+- name: Enable and start Tomcat service
+  systemd:
+    name: tomcat
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  tags:
+    - tomcat-service
+
+- name: Wait for Tomcat to start
+  wait_for:
+    port: "{{ tomcat_port }}"
+    delay: 5
+    timeout: 300
+  tags:
+    - tomcat-service
+
+- name: Create webapps deployment directory
+  file:
+    path: "{{ war_destination }}"
+    state: directory
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: '0755'
+  tags:
+    - tomcat-app
