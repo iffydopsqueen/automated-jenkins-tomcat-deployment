@@ -100,12 +100,18 @@ pipeline {
                     bash -eu -o pipefail -c '
                       echo "Waiting for Tomcat to start..."
                       sleep 15
-                      retry(10) {
-                        echo "Checking Tomcat at http://${TOMCAT_HOST}:${TOMCAT_PORT}/"
-                        curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/" && break
-                        echo "Tomcat not yet available, retrying in 10 seconds..."
-                        sleep 10
-                      }
+                      for i in $(seq 1 10); do
+                        echo "Checking Tomcat at http://${TOMCAT_HOST}:${TOMCAT_PORT}/ (attempt ${i})"
+                        if curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/"; then
+                          exit 0
+                        fi
+                        if [ "$i" -lt 10 ]; then
+                          echo "Tomcat not yet available, retrying in 10 seconds..."
+                          sleep 10
+                        fi
+                      done
+                      echo "Tomcat health check failed after 10 attempts."
+                      exit 1
                     '
                 '''
             }
