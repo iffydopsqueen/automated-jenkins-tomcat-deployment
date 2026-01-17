@@ -8,13 +8,13 @@ variable "ami_id" {
 variable "instance_type" {
   description = "The type of instance to use"
   type        = string
-  default     = "t3.micro"
+  default     = "t3.small"
 }
 
 variable "project" {
   description = "The project name"
   type        = string
-  default     = "devops"
+  default     = "terraform"
 }
 
 variable "key_pair_name" {
