@@ -114,7 +114,7 @@ jobs:
         run: terraform apply -auto-approve -no-color tfplan
 
   destroy:
-    needs: plan
+    needs: tf-plan
     if: ${{ inputs.action == 'destroy' }}
     runs-on: ubuntu-latest
     environment: terraform-destroy
