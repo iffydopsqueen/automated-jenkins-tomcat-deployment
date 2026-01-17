@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'TOMCAT_HOST',
-            defaultValue: '10.0.1.247',
+            defaultValue: '10.0.1.48', 
             description: 'Tomcat host or IP'
         )
         string(
