@@ -44,5 +44,6 @@ tomcat_deploy_public_key: ""
 tomcat_webapps_mode: "2775"
 tomcat_deploy_sudo: true
 tomcat_deploy_sudoers_commands:
+  - /bin/mv
   - /bin/systemctl restart tomcat
   - /bin/systemctl status tomcat
