@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'TOMCAT_HOST',
-            defaultValue: 'CHANGE_ME',
+            defaultValue: '10.0.1.247',
             description: 'Tomcat host or IP'
         )
         string(
@@ -36,7 +36,7 @@ pipeline {
         stage('Validate') {
             steps {
                 script {
-                    if (params.TOMCAT_HOST == 'CHANGE_ME') {
+                    if (!params.TOMCAT_HOST?.trim()) {
                         error('Set TOMCAT_HOST in the job parameters before running the pipeline.')
                     }
                 }
