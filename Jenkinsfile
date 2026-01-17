@@ -96,7 +96,18 @@ pipeline {
                 expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
-                sh 'curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/"'
+                sh '''
+                    bash -eu -o pipefail -c '
+                      echo "Waiting for Tomcat to start..."
+                      sleep 15
+                      retry(10) {
+                        echo "Checking Tomcat at http://${TOMCAT_HOST}:${TOMCAT_PORT}/"
+                        curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/" && break
+                        echo "Tomcat not yet available, retrying in 10 seconds..."
+                        sleep 10
+                      }
+                    '
+                '''
             }
         }
     }
