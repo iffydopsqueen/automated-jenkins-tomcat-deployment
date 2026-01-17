@@ -29,7 +29,7 @@ pipeline {
 
     environment {
         DEPLOY_PATH = '/opt/tomcat/webapps'
-        DEPLOY_WAR = 'app/target/ROOT.war'
+        DEPLOY_WAR = 'app/target/myapp.war'
     }
 
     stages {
@@ -83,8 +83,8 @@ pipeline {
                         bash -eu -o pipefail -c '
                           mkdir -p ~/.ssh
                           ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
-                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:/tmp/ROOT.war"
-                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo /bin/mv /tmp/ROOT.war ${DEPLOY_PATH}/ROOT.war && sudo /bin/systemctl restart tomcat"
+                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:/tmp/myapp.war"
+                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo /bin/mv /tmp/myapp.war ${DEPLOY_PATH}/myapp.war && sudo /bin/systemctl restart tomcat"
                         '
                     '''
                 }
@@ -101,8 +101,8 @@ pipeline {
                       echo "Waiting for Tomcat to start..."
                       sleep 15
                       for i in $(seq 1 10); do
-                        echo "Checking Tomcat at http://${TOMCAT_HOST}:${TOMCAT_PORT}/ (attempt ${i})"
-                        if curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/"; then
+                        echo "Checking Tomcat at http://${TOMCAT_HOST}:${TOMCAT_PORT}/myapp/ (attempt ${i})"
+                        if curl -f "http://${TOMCAT_HOST}:${TOMCAT_PORT}/myapp/"; then
                           exit 0
                         fi
                         if [ "$i" -lt 10 ]; then
