@@ -7,8 +7,8 @@ jenkins_home: /var/lib/jenkins
 jenkins_url: "http://{{ ansible_host }}:{{ jenkins_port }}"
 
 # Java home
-java_version: openjdk-17-jdk
-java_home: /usr/lib/jvm/java-17-openjdk-amd64
+java_version: openjdk-21-jdk
+java_home: /usr/lib/jvm/java-21-openjdk-amd64
 
 # System dependencies for Jenkins
 system_packages:
