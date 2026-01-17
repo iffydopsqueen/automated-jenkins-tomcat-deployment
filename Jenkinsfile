@@ -54,10 +54,11 @@ pipeline {
         stage('Prepare Artifact') {
             steps {
                 sh '''
-                    set -euo pipefail
+                    bash -eu -o pipefail <<'EOF'
                     WAR_FILE=$(ls -1 app/target/*.war | head -n 1)
                     cp "$WAR_FILE" "${DEPLOY_WAR}"
                     ls -lh "${DEPLOY_WAR}"
+                    EOF
                 '''
             }
         }
@@ -75,11 +76,12 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        set -euo pipefail
+                        bash -eu -o pipefail <<'EOF'
                         mkdir -p ~/.ssh
                         ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
                         scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:${DEPLOY_PATH}/ROOT.war"
                         ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo systemctl restart tomcat"
+                        EOF
                     '''
                 }
             }
