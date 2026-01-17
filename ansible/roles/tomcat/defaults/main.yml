@@ -1,0 +1,48 @@
+---
+
+# Tomcat role defaults
+tomcat_port: 8080
+tomcat_user: tomcat
+tomcat_group: tomcat
+tomcat_home: /opt/tomcat
+tomcat_version: "10.1.13"
+tomcat_shutdown_port: 8005
+tomcat_redirect_port: 8443
+
+# Java
+java_version: openjdk-17-jdk
+java_home: /usr/lib/jvm/java-17-openjdk-amd64
+
+# System dependencies
+system_packages:
+  - ca-certificates
+  - gnupg
+  - git
+  - curl
+  - wget
+  - tar
+  - apt-transport-https
+
+# Deployment settings
+tomcat_deployment_method: "scp"
+tomcat_restart_after_deploy: true
+tomcat_backup_war_files: true
+
+# Tomcat Manager credentials (for programmatic deployment)
+tomcat_manager_user: "admin"
+tomcat_manager_password: "{{ tomcat_manager_password_vault | default('admin123') }}"
+
+# SSH deployment user (used by Jenkins)
+tomcat_deploy_user: "deployer"
+tomcat_deploy_password: "{{ tomcat_deploy_password_vault | default('deploy123') }}"
+
+# Application deployment
+app_name: "my-java-app"
+war_destination: "{{ tomcat_home }}/webapps/"
+
+tomcat_deploy_public_key: ""
+tomcat_webapps_mode: "2775"
+tomcat_deploy_sudo: true
+tomcat_deploy_sudoers_commands:
+  - /bin/systemctl restart tomcat
+  - /bin/systemctl status tomcat

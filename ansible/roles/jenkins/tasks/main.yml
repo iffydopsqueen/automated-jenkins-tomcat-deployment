@@ -1,0 +1,98 @@
+---
+
+# Install and configure Jenkins
+- name: Update system packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+  tags:
+    - system-update
+
+- name: Install required dependencies
+  apt:
+    name: "{{ system_packages }}"
+    state: present
+  tags:
+    - dependencies
+
+- name: Install Java
+  apt:
+    name: "{{ java_version }}"
+    state: present
+  tags:
+    - java
+
+- name: Verify Java installation
+  command: java -version
+  register: java_version_check
+  changed_when: false
+  tags:
+    - java
+
+- name: Set JAVA_HOME environment variable
+  lineinfile:
+    path: /etc/profile.d/java.sh
+    line: "export JAVA_HOME={{ java_home }}"
+    create: yes
+    state: present
+  tags:
+    - java
+
+- name: Add Jenkins apt key
+  apt_key:
+    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    state: present
+  tags:
+    - jenkins-repo
+
+- name: Add Jenkins apt repository
+  apt_repository:
+    repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+    state: present
+    filename: jenkins
+  tags:
+    - jenkins-repo
+
+- name: Update apt cache after adding Jenkins repo
+  apt:
+    update_cache: yes
+  tags:
+    - jenkins-repo
+
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: present
+  tags:
+    - jenkins-install
+
+- name: Install Maven
+  apt:
+    name: maven
+    state: present
+  tags:
+    - maven
+
+- name: Start Jenkins service
+  systemd:
+    name: jenkins
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  tags:
+    - jenkins-service
+
+- name: Wait for Jenkins to start
+  wait_for:
+    port: "{{ jenkins_port }}"
+    delay: 10
+    timeout: 300
+  tags:
+    - jenkins-service
+
+- name: Get initial Jenkins admin password
+  command: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: jenkins_admin_password
+  changed_when: false
+  tags:
+    - jenkins-config

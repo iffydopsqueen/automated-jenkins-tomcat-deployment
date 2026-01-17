@@ -1,0 +1,18 @@
+---
+
+# Playbook to configure Jenkins and Tomcat servers
+- name: Configure Jenkins server
+  hosts: jenkins
+  become: true
+  roles:
+    - jenkins
+  tags:
+    - jenkins
+
+- name: Configure Tomcat server
+  hosts: tomcat
+  become: true
+  roles:
+    - tomcat
+  tags:
+    - tomcat

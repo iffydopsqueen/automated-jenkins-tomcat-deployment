@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tomcat-users xmlns="http://tomcat.apache.org/xml"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+              version="1.0">
+
+  <!-- Default admin user for Tomcat Manager -->
+  <role rolename="manager-gui"/>
+  <role rolename="manager-script"/>
+  <role rolename="manager-jmx"/>
+  <role rolename="manager-status"/>
+
+  <!-- Tomcat Manager user -->
+  <user username="{{ tomcat_manager_user }}" password="{{ tomcat_manager_password }}" 
+        roles="manager-gui,manager-script,manager-jmx,manager-status"/>
+
+  <!-- Deployment user for Jenkins CI/CD -->
+  <role rolename="deployer"/>
+  <user username="{{ tomcat_deploy_user }}" password="{{ tomcat_deploy_password }}" 
+        roles="manager-script,deployer"/>
+
+</tomcat-users>
