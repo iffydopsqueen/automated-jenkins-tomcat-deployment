@@ -54,15 +54,15 @@ pipeline {
         stage('Prepare Artifact') {
             steps {
                 sh '''
-                    bash -eu -o pipefail <<'EOF'
-                    WAR_FILE=$(ls -1 app/target/*.war | head -n 1)
-                    if [ "$WAR_FILE" != "${DEPLOY_WAR}" ]; then
+                    bash -eu -o pipefail -c '
+                      WAR_FILE=$(ls -1 app/target/*.war | head -n 1)
+                      if [ "$WAR_FILE" != "${DEPLOY_WAR}" ]; then
                         cp "$WAR_FILE" "${DEPLOY_WAR}"
-                    else
+                      else
                         echo "DEPLOY_WAR already matches built artifact: ${DEPLOY_WAR}"
-                    fi
-                    ls -lh "${DEPLOY_WAR}"
-                    EOF
+                      fi
+                      ls -lh "${DEPLOY_WAR}"
+                    '
                 '''
             }
         }
@@ -80,12 +80,12 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        bash -eu -o pipefail <<'EOF'
-                        mkdir -p ~/.ssh
-                        ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
-                        scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:${DEPLOY_PATH}/ROOT.war"
-                        ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo systemctl restart tomcat"
-                        EOF
+                        bash -eu -o pipefail -c '
+                          mkdir -p ~/.ssh
+                          ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
+                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:${DEPLOY_PATH}/ROOT.war"
+                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo systemctl restart tomcat"
+                        '
                     '''
                 }
             }
