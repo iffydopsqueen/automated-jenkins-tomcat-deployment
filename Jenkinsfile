@@ -83,8 +83,8 @@ pipeline {
                         bash -eu -o pipefail -c '
                           mkdir -p ~/.ssh
                           ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
-                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:${DEPLOY_PATH}/ROOT.war"
-                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo systemctl restart tomcat"
+                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:/tmp/ROOT.war"
+                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo mv /tmp/ROOT.war ${DEPLOY_PATH}/ROOT.war && sudo systemctl restart tomcat"
                         '
                     '''
                 }
