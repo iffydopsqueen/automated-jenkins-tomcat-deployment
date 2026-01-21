@@ -30,11 +30,8 @@ pipeline {
     environment {
         APP_NAME = 'myapp'
         APP_DIR = 'app'
-        WAR_PATH = "${APP_DIR}/target/${APP_NAME}.war"
         DEPLOY_PATH = '/opt/tomcat/webapps'
-        DEPLOY_TMP = "/tmp/${APP_NAME}.war"
         DEPLOY_WAR = "${DEPLOY_PATH}/${APP_NAME}.war"
-        TOMCAT_SERVICE = 'tomcat'
     }
 
     stages {
