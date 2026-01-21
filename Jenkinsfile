@@ -28,10 +28,8 @@ pipeline {
     }
 
     environment {
-        APP_NAME = 'myapp'
-        APP_DIR = 'app'
         DEPLOY_PATH = '/opt/tomcat/webapps'
-        DEPLOY_WAR = "${DEPLOY_PATH}/${APP_NAME}.war"
+        DEPLOY_WAR = 'app/target/myapp.war'
     }
 
     stages {
@@ -47,7 +45,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir(env.APP_DIR) {
+                dir('app') {
                     sh 'mvn clean package'
                 }
             }
@@ -58,25 +56,10 @@ pipeline {
                 sh '''
                     bash -eu -o pipefail -c '
                       WAR_FILE=$(ls -1 app/target/*.war | head -n 1)
-                      if [ "$(id -u)" -eq 0 ]; then
-                        mkdir -p "${DEPLOY_PATH}"
-                        chown tomcat:tomcat "${DEPLOY_PATH}"
-                        chmod 2775 "${DEPLOY_PATH}"
+                      if [ "$WAR_FILE" != "${DEPLOY_WAR}" ]; then
                         cp "$WAR_FILE" "${DEPLOY_WAR}"
-                        chown tomcat:tomcat "${DEPLOY_WAR}"
-                        chmod 0644 "${DEPLOY_WAR}"
                       else
-                        if sudo -n true 2>/dev/null; then
-                          sudo mkdir -p "${DEPLOY_PATH}"
-                          sudo chown tomcat:tomcat "${DEPLOY_PATH}"
-                          sudo chmod 2775 "${DEPLOY_PATH}"
-                          sudo cp "$WAR_FILE" "${DEPLOY_WAR}"
-                          sudo chown tomcat:tomcat "${DEPLOY_WAR}"
-                          sudo chmod 0644 "${DEPLOY_WAR}"
-                        else
-                          echo "Passwordless sudo is required for deploy steps. Configure sudoers for the Jenkins user or run the agent as root." >&2
-                          exit 1
-                        fi
+                        echo "DEPLOY_WAR already matches built artifact: ${DEPLOY_WAR}"
                       fi
                       ls -lh "${DEPLOY_WAR}"
                     '
@@ -89,30 +72,30 @@ pipeline {
                 expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
-                sh '''
-                    bash -eu -o pipefail -c '
-                      if [ "$(id -u)" -eq 0 ]; then
-                        systemctl restart tomcat
-                        systemctl status tomcat --no-pager
-                      else
-                        if sudo -n true 2>/dev/null; then
-                          sudo systemctl restart tomcat
-                          sudo systemctl status tomcat --no-pager
-                        else
-                          echo "Passwordless sudo is required to restart Tomcat. Configure sudoers for the Jenkins user or run the agent as root." >&2
-                          exit 1
-                        fi
-                      fi
-                    '
-                '''
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'tomcat-ssh',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )
+                ]) {
+                    sh '''
+                        bash -eu -o pipefail -c '
+                          mkdir -p ~/.ssh
+                          ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
+                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:/tmp/myapp.war"
+                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo /bin/mv /tmp/myapp.war ${DEPLOY_PATH}/myapp.war && sudo /bin/systemctl restart tomcat"
+                        '
+                    '''
+                }
             }
         }
 
         stage('Health Check') {
             when {
                 anyOf {
-                    branch 'master'
-                    branch 'main'
+                    env.GIT_BRANCH == 'origin/master'
+                    env.GIT_BRANCH == 'origin/main'
                 }
             }
             steps {
