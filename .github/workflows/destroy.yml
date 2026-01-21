@@ -12,8 +12,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
+  TF_IN_AUTOMATION: "true"
+  IAM_ROLE_NAME: ${{ vars.IAM_ROLE_NAME }}
+  IAM_EC2_ROLE_NAME: ${{ vars.IAM_EC2_ROLE_NAME }}
 
 jobs:
   ec2-plan:
