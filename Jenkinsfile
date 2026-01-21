@@ -66,12 +66,17 @@ pipeline {
                         chown tomcat:tomcat "${DEPLOY_WAR}"
                         chmod 0644 "${DEPLOY_WAR}"
                       else
-                        sudo mkdir -p "${DEPLOY_PATH}"
-                        sudo chown tomcat:tomcat "${DEPLOY_PATH}"
-                        sudo chmod 2775 "${DEPLOY_PATH}"
-                        sudo cp "$WAR_FILE" "${DEPLOY_WAR}"
-                        sudo chown tomcat:tomcat "${DEPLOY_WAR}"
-                        sudo chmod 0644 "${DEPLOY_WAR}"
+                        if sudo -n true 2>/dev/null; then
+                          sudo mkdir -p "${DEPLOY_PATH}"
+                          sudo chown tomcat:tomcat "${DEPLOY_PATH}"
+                          sudo chmod 2775 "${DEPLOY_PATH}"
+                          sudo cp "$WAR_FILE" "${DEPLOY_WAR}"
+                          sudo chown tomcat:tomcat "${DEPLOY_WAR}"
+                          sudo chmod 0644 "${DEPLOY_WAR}"
+                        else
+                          echo "Passwordless sudo is required for deploy steps. Configure sudoers for the Jenkins user or run the agent as root." >&2
+                          exit 1
+                        fi
                       fi
                       ls -lh "${DEPLOY_WAR}"
                     '
@@ -90,8 +95,13 @@ pipeline {
                         systemctl restart tomcat
                         systemctl status tomcat --no-pager
                       else
-                        sudo systemctl restart tomcat
-                        sudo systemctl status tomcat --no-pager
+                        if sudo -n true 2>/dev/null; then
+                          sudo systemctl restart tomcat
+                          sudo systemctl status tomcat --no-pager
+                        else
+                          echo "Passwordless sudo is required to restart Tomcat. Configure sudoers for the Jenkins user or run the agent as root." >&2
+                          exit 1
+                        fi
                       fi
                     '
                 '''
