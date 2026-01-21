@@ -55,6 +55,7 @@ resource "aws_iam_role_policy_attachment" "github_actions" {
   for_each = toset([
     "arn:aws:iam::aws:policy/AmazonEC2FullAccess",
     "arn:aws:iam::aws:policy/AmazonVPCFullAccess",
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
   ])
 
   role       = aws_iam_role.github_actions.name
