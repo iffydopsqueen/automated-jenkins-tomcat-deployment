@@ -48,7 +48,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir(env.APP_DIR) {
-                    sh 'mvn -B clean package'
+                    sh 'mvn clean package'
                 }
             }
         }
@@ -58,10 +58,20 @@ pipeline {
                 sh '''
                     bash -eu -o pipefail -c '
                       WAR_FILE=$(ls -1 app/target/*.war | head -n 1)
-                      if [ "$WAR_FILE" != "${DEPLOY_WAR}" ]; then
+                      if [ "$(id -u)" -eq 0 ]; then
+                        mkdir -p "${DEPLOY_PATH}"
+                        chown tomcat:tomcat "${DEPLOY_PATH}"
+                        chmod 2775 "${DEPLOY_PATH}"
                         cp "$WAR_FILE" "${DEPLOY_WAR}"
+                        chown tomcat:tomcat "${DEPLOY_WAR}"
+                        chmod 0644 "${DEPLOY_WAR}"
                       else
-                        echo "DEPLOY_WAR already matches built artifact: ${DEPLOY_WAR}"
+                        sudo mkdir -p "${DEPLOY_PATH}"
+                        sudo chown tomcat:tomcat "${DEPLOY_PATH}"
+                        sudo chmod 2775 "${DEPLOY_PATH}"
+                        sudo cp "$WAR_FILE" "${DEPLOY_WAR}"
+                        sudo chown tomcat:tomcat "${DEPLOY_WAR}"
+                        sudo chmod 0644 "${DEPLOY_WAR}"
                       fi
                       ls -lh "${DEPLOY_WAR}"
                     '
@@ -74,22 +84,17 @@ pipeline {
                 expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
-                withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'tomcat-ssh',
-                        keyFileVariable: 'SSH_KEY',
-                        usernameVariable: 'SSH_USER'
-                    )
-                ]) {
-                    sh '''
-                        bash -eu -o pipefail -c '
-                          mkdir -p ~/.ssh
-                          ssh-keyscan -H "${TOMCAT_HOST}" >> ~/.ssh/known_hosts
-                          scp -i "${SSH_KEY}" "${DEPLOY_WAR}" "${SSH_USER}@${TOMCAT_HOST}:/tmp/myapp.war"
-                          ssh -i "${SSH_KEY}" "${SSH_USER}@${TOMCAT_HOST}" "sudo /bin/mv /tmp/myapp.war ${DEPLOY_PATH}/myapp.war && sudo /bin/systemctl restart tomcat"
-                        '
-                    '''
-                }
+                sh '''
+                    bash -eu -o pipefail -c '
+                      if [ "$(id -u)" -eq 0 ]; then
+                        systemctl restart tomcat
+                        systemctl status tomcat --no-pager
+                      else
+                        sudo systemctl restart tomcat
+                        sudo systemctl status tomcat --no-pager
+                      fi
+                    '
+                '''
             }
         }
 
