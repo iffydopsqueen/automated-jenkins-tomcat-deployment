@@ -3,16 +3,21 @@ data "tls_certificate" "github_actions" {
   url = "https://token.actions.githubusercontent.com"
 }
 
-# Create the IAM OIDC provider for GitHub Actions
-resource "aws_iam_openid_connect_provider" "github_actions" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
-
-  tags = {
-    Project = var.project
-  }
+# Fetch existing IAM OIDC provider for GitHub Actions
+data "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
 }
+
+# Create the IAM OIDC provider for GitHub Actions
+# resource "aws_iam_openid_connect_provider" "github_actions" {
+#   url             = "https://token.actions.githubusercontent.com"
+#   client_id_list  = ["sts.amazonaws.com"]
+#   thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
+
+#   tags = {
+#     Project = var.project
+#   }
+# }
 
 # IAM Role Policy for GitHub Actions to assume via OIDC
 data "aws_iam_policy_document" "github_actions_assume_role" {
@@ -22,7 +27,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github_actions.arn]
+      identifiers = [ data.aws_iam_openid_connect_provider.github_actions.arn ]
     }
 
     condition {
