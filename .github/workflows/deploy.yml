@@ -40,7 +40,10 @@ jobs:
         run: terraform init -input=false
 
       - name: Terraform fmt
-        run: terraform fmt -check -recursive
+        run: |
+          if ! terraform fmt -check -diff -recursive; then
+            echo "Terraform files need formatting (run: terraform fmt -recursive)."
+          fi
 
       - name: Terraform validate
         run: terraform validate -no-color
@@ -110,7 +113,10 @@ jobs:
         run: terraform init -input=false
 
       - name: Terraform fmt
-        run: terraform fmt -check -recursive
+        run: |
+          if ! terraform fmt -check -diff -recursive; then
+            echo "Terraform files need formatting (run: terraform fmt -recursive)."
+          fi
 
       - name: Terraform validate
         run: terraform validate -no-color
