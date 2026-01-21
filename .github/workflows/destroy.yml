@@ -1,0 +1,156 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: terraform-destroy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  ec2-plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/ec2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan (ec2 destroy)
+        run: terraform plan -destroy -no-color -out=ec2-tfdestroy
+
+      - name: Upload destroy plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: ec2-tfdestroy
+          path: terraform/ec2/ec2-tfdestroy
+          if-no-files-found: error
+
+  ec2-destroy:
+    needs: ec2-plan
+    runs-on: ubuntu-latest
+    environment: terraform-destroy
+    defaults:
+      run:
+        working-directory: terraform/ec2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Download destroy plan
+        uses: actions/download-artifact@v4
+        with:
+          name: ec2-tfdestroy
+          path: terraform/ec2
+
+      - name: Terraform destroy
+        run: terraform apply -auto-approve -no-color ec2-tfdestroy
+
+  iam-plan:
+    needs: ec2-destroy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/iam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan (iam destroy)
+        run: terraform plan -destroy -no-color -out=iam-tfdestroy
+
+      - name: Upload destroy plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: iam-tfdestroy
+          path: terraform/iam/iam-tfdestroy
+          if-no-files-found: error
+
+  iam-destroy:
+    needs: iam-plan
+    runs-on: ubuntu-latest
+    environment: terraform-destroy
+    defaults:
+      run:
+        working-directory: terraform/iam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Download destroy plan
+        uses: actions/download-artifact@v4
+        with:
+          name: iam-tfdestroy
+          path: terraform/iam
+
+      - name: Terraform destroy
+        run: terraform apply -auto-approve -no-color iam-tfdestroy

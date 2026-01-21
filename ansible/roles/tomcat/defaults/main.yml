@@ -15,18 +15,16 @@ java_home: /usr/lib/jvm/java-21-openjdk-amd64
 
 # System dependencies
 system_packages:
-  - ca-certificates
-  - gnupg
   - git
+  - tar
   - curl
   - wget
-  - tar
-  - apt-transport-https
+  - "{{ java_version }}"
 
 # Deployment settings
+tomcat_backup_war_files: true
 tomcat_deployment_method: "scp"
 tomcat_restart_after_deploy: true
-tomcat_backup_war_files: true
 
 # Tomcat Manager credentials (for programmatic deployment)
 tomcat_manager_user: "admin"
@@ -37,9 +35,7 @@ tomcat_deploy_user: "deployer"
 tomcat_deploy_password: "{{ tomcat_deploy_password_vault | default('deploy123') }}"
 
 # Application deployment
-app_name: "my-java-app"
 war_destination: "{{ tomcat_home }}/webapps/"
-
 tomcat_deploy_public_key: ""
 tomcat_webapps_mode: "2775"
 tomcat_deploy_sudo: true

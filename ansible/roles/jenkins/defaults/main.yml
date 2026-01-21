@@ -6,22 +6,24 @@ jenkins_version: "latest"
 jenkins_home: /var/lib/jenkins
 jenkins_url: "http://{{ ansible_host }}:{{ jenkins_port }}"
 
-# Java home
+# Java and Maven variables
+maven_package: maven
 java_version: openjdk-21-jdk
 java_home: /usr/lib/jvm/java-21-openjdk-amd64
 
 # System dependencies for Jenkins
 system_packages:
-  - ca-certificates
-  - gnupg
   - git
-  - curl
-  - wget
   - tar
-  - apt-transport-https
+  - wget
+  - curl
+  - gnupg
+  - ca-certificates
+  - "{{ java_version }}"
+  - "{{ maven_package }}"
 
 jenkins_plugins:
   - git
-  - maven-plugin
   - ssh-agent
+  - maven-plugin
   - credentials-binding

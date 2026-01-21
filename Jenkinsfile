@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'TOMCAT_HOST',
-            defaultValue: '10.0.1.48', 
+            defaultValue: '10.0.1.21', 
             description: 'Tomcat host or IP'
         )
         string(
@@ -46,7 +46,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir('app') {
-                    sh 'mvn -B clean package'
+                    sh 'mvn clean package'
                 }
             }
         }
@@ -69,7 +69,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                expression { env.GIT_BRANCH == 'origin/master' }
+                expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/main' }
             }
             steps {
                 withCredentials([
@@ -93,7 +93,7 @@ pipeline {
 
         stage('Health Check') {
             when {
-                expression { env.GIT_BRANCH == 'origin/master' }
+                expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/main' }
             }
             steps {
                 sh '''

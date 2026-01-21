@@ -8,18 +8,12 @@
   tags:
     - system-update
 
-- name: Install required dependencies
+- name: Install system packages
   apt:
     name: "{{ system_packages }}"
     state: present
   tags:
     - dependencies
-
-- name: Install Java
-  apt:
-    name: "{{ java_version }}"
-    state: present
-  tags:
     - java
 
 - name: Verify Java installation
@@ -158,9 +152,9 @@
   tags:
     - tomcat-permissions
 
-- name: Configure Tomcat users (tomcat-users.xml)
+- name: Configure Tomcat users
   template:
-    src: tomcat-users.xml.j2
+    src: tomcat-users.j2
     dest: "{{ tomcat_home }}/conf/tomcat-users.xml"
     owner: "{{ tomcat_user }}"
     group: "{{ tomcat_group }}"
@@ -169,9 +163,9 @@
   tags:
     - tomcat-config
 
-- name: Configure Tomcat server (server.xml)
+- name: Configure Tomcat server
   template:
-    src: server.xml.j2
+    src: server.j2
     dest: "{{ tomcat_home }}/conf/server.xml"
     owner: "{{ tomcat_user }}"
     group: "{{ tomcat_group }}"
