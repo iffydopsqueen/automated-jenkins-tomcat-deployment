@@ -101,7 +101,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_EC2_ROLE_NAME) }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform init
@@ -140,7 +140,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_EC2_ROLE_NAME) }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform init
