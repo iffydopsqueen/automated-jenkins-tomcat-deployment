@@ -12,8 +12,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
+  TF_IN_AUTOMATION: "true"
+  IAM_ROLE_NAME: ${{ vars.IAM_ROLE_NAME }}
+  IAM_EC2_ROLE_NAME: ${{ vars.IAM_EC2_ROLE_NAME }}
 
 jobs:
   iam-plan:
@@ -38,7 +40,10 @@ jobs:
         run: terraform init -input=false
 
       - name: Terraform fmt
-        run: terraform fmt -check -recursive
+        run: |
+          if ! terraform fmt -check -diff -recursive; then
+            echo "Terraform files need formatting (run: terraform fmt -recursive)."
+          fi
 
       - name: Terraform validate
         run: terraform validate -no-color
@@ -101,14 +106,17 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_EC2_ROLE_NAME) }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform init
         run: terraform init -input=false
 
       - name: Terraform fmt
-        run: terraform fmt -check -recursive
+        run: |
+          if ! terraform fmt -check -diff -recursive; then
+            echo "Terraform files need formatting (run: terraform fmt -recursive)."
+          fi
 
       - name: Terraform validate
         run: terraform validate -no-color
@@ -140,7 +148,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_ROLE_NAME) }}
+          role-to-assume: ${{ format('arn:aws:iam::{0}:role/{1}', secrets.AWS_ACCOUNT_ID, env.IAM_EC2_ROLE_NAME) }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform init

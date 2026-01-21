@@ -10,9 +10,9 @@ variable "project" {
 }
 
 variable "github_actions_role_name" {
-  description = "IAM role name for GitHub Actions OIDC"
+  description = "IAM EC2 role name for GitHub Actions OIDC"
   type        = string
-  default     = "GitHubAction-OIDCAssumeRole"
+  default     = "EC2-GitHubAction-OIDCAssumeRole"
 }
 
 variable "github_actions_subjects" {
