@@ -56,14 +56,6 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                dir('app') {
-                    sh 'mvn -B clean package'
-                }
-            }
-        }
-
         stage('Prepare Artifact') {
             steps {
                 sh '''
