@@ -93,10 +93,7 @@ pipeline {
 
         stage('Health Check') {
             when {
-                anyOf {
-                    env.GIT_BRANCH == 'origin/master'
-                    env.GIT_BRANCH == 'origin/main'
-                }
+                expression { env.GIT_BRANCH == 'origin/master' }
             }
             steps {
                 sh '''
