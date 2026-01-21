@@ -48,7 +48,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir(env.APP_DIR) {
-                    sh 'mvn clean package'
+                    sh 'mvn -B clean package'
                 }
             }
         }
