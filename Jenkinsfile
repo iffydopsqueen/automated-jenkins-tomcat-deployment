@@ -69,7 +69,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/code-enhancements' }
+                expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/main' }
             }
             steps {
                 withCredentials([
@@ -93,7 +93,7 @@ pipeline {
 
         stage('Health Check') {
             when {
-                expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/code-enhancements' }
+                expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/main' }
             }
             steps {
                 sh '''
