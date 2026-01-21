@@ -28,8 +28,13 @@ pipeline {
     }
 
     environment {
+        APP_NAME = 'myapp'
+        APP_DIR = 'app'
+        WAR_PATH = "${APP_DIR}/target/${APP_NAME}.war"
         DEPLOY_PATH = '/opt/tomcat/webapps'
-        DEPLOY_WAR = 'app/target/myapp.war'
+        DEPLOY_TMP = "/tmp/${APP_NAME}.war"
+        DEPLOY_WAR = "${DEPLOY_PATH}/${APP_NAME}.war"
+        TOMCAT_SERVICE = 'tomcat'
     }
 
     stages {
@@ -39,6 +44,14 @@ pipeline {
                     if (!params.TOMCAT_HOST?.trim()) {
                         error('Set TOMCAT_HOST in the job parameters before running the pipeline.')
                     }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir(env.APP_DIR) {
+                    sh 'mvn clean package'
                 }
             }
         }
@@ -93,7 +106,10 @@ pipeline {
 
         stage('Health Check') {
             when {
-                expression { env.GIT_BRANCH == 'origin/master' }
+                anyOf {
+                    branch 'master'
+                    branch 'main'
+                }
             }
             steps {
                 sh '''

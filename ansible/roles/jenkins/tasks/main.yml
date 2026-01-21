@@ -8,19 +8,14 @@
   tags:
     - system-update
 
-- name: Install required dependencies
+- name: Install system packages
   apt:
     name: "{{ system_packages }}"
     state: present
   tags:
     - dependencies
-
-- name: Install Java
-  apt:
-    name: "{{ java_version }}"
-    state: present
-  tags:
     - java
+    - maven
 
 - name: Verify Java installation
   command: java -version
@@ -38,16 +33,61 @@
   tags:
     - java
 
-- name: Add Jenkins apt key
-  apt_key:
-    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-    state: present
+- name: Add Jenkins apt keyring
+  get_url:
+    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+    dest: /usr/share/keyrings/jenkins-keyring.asc
+    mode: "0644"
+    force: yes
+  tags:
+    - jenkins-repo
+
+- name: Ensure Jenkins keyring has correct permissions
+  file:
+    path: /usr/share/keyrings/jenkins-keyring.asc
+    mode: "0644"
+  tags:
+    - jenkins-repo
+
+# Troubleshoot existing Jenkins repo entries
+- name: Remove Jenkins repo entry from sources.list
+  lineinfile:
+    path: /etc/apt/sources.list
+    regexp: "^deb(-src)?\\s+.*https://pkg.jenkins.io/debian-stable\\s+binary/.*$"
+    state: absent
+  tags:
+    - jenkins-repo
+
+- name: Find apt source list files
+  find:
+    paths: /etc/apt/sources.list.d
+    patterns:
+      - "*.list"
+      - "*.sources"
+  register: apt_source_lists
+  tags:
+    - jenkins-repo
+
+- name: Read apt source list files
+  slurp:
+    src: "{{ item.path }}"
+  loop: "{{ apt_source_lists.files }}"
+  register: apt_source_list_contents
+  tags:
+    - jenkins-repo
+
+- name: Remove Jenkins repo source files
+  file:
+    path: "{{ item.item.path }}"
+    state: absent
+  when: "'pkg.jenkins.io' in (item.content | b64decode)"
+  loop: "{{ apt_source_list_contents.results }}"
   tags:
     - jenkins-repo
 
 - name: Add Jenkins apt repository
   apt_repository:
-    repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
     state: present
     filename: jenkins
   tags:
@@ -65,13 +105,6 @@
     state: present
   tags:
     - jenkins-install
-
-- name: Install Maven
-  apt:
-    name: maven
-    state: present
-  tags:
-    - maven
 
 - name: Start Jenkins service
   systemd:
